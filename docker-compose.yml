@@ -58,3 +58,12 @@ flightairmap:
    # link to database and dump1090
    - "mysql"
    - "dump1090"
+
+# define fr24feed service
+fr24feed:
+  image: "sysrun/rpi-fr24feed:1.0.13"
+  # get data from service dump1090 port 30005
+  command: "--fr24key=YOURFR24KEY --receiver=beast-tcp --logmode=0 --host=dump1090:30005"
+  links:
+   # link to dump1090 service
+   - "dump1090"
