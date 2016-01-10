@@ -1,0 +1,60 @@
+# define dump1090 service
+dump1090:
+  image: "sysrun/rpi-dump1090:tedsluis"
+  # use device 0, set receiver position to Berlin, Germany (--lat xx, --lon xx)
+  command: "--device-index 0 --quiet --net --modeac --lat 52.5167 --lon 13.3833"
+  # expose port 30003 for flightairmap
+  expose:
+    - "30003"
+    - "30005"
+  devices:
+    - "/dev/bus/usb"
+  # expose port 8080 on the host (http://rapberry:8080)
+  ports:
+   - "8080:8080"
+
+
+# define mysql database
+mysql:
+  image: "hypriot/rpi-mysql"
+  environment:
+   # set mysql credentials
+   - MYSQL_ROOT_PASSWORD=secure
+   - MYSQL_USER=flight
+   - MYSQL_PASSWORD=flight
+   - MYSQL_DATABASE=flight
+  volumes:
+   # bind the folder /opt/flight/mysql on the raspberry as datastorage
+   - /opt/flight/mysql:/var/lib/mysql
+
+
+#define flightairmap service
+flightairmap:
+  image: "sysrun/rpi-flightairmap:0.2"
+  stdin_open: true
+  tty: true
+  restart: always
+  expose:
+   - "9999"
+  ports:
+   # bind port 80 to the host (access via http://raspberry)
+   - "80:80"
+  environment:
+   # set the configuration
+   - FLIGHT_INSTALLED=false
+   - FLIGHT_TIMEZONE=Europe/Berlin
+   # the next four values are taken from the mysql config
+   - FLIGHT_DB_HOST=mysql
+   - FLIGHT_DB_USER=flight
+   - FLIGHT_DB_PASS=flight
+   - FLIGHT_DB_NAME=flight
+   # set the dump1090 host
+   - FLIGHT_SBS1_HOST=dump1090:30003
+   # change these values to your country / position
+   - FLIGHT_SQUAWK_CO=DE
+   - FLIGHT_CENTER_LAT=52.5167
+   - FLIGHT_CENTER_LON=13.3833
+  links:
+   # link to database and dump1090
+   - "mysql"
+   - "dump1090"
